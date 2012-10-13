@@ -91,6 +91,8 @@
 (defn para-line [x1 x2 t]
   (+ (* (- 1 t) x1) (* t x2)))
 
+
+;;Computes the values that lie on the parametric line
 (defn line-value [l t]
   (let [content (get-content l)
         xs (map #(get-attrs % :x) content)
@@ -98,7 +100,7 @@
         p (map #(para-line (first %) (last %) t) [xs ys])]
     p))
 
-
+;;Partitions the vector [1 2 3 4] into [[1 2] [2 3] [3 4]]
 (defn two-partition [xs]
   (loop [ys xs
          ans []]
