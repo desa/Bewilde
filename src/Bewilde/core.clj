@@ -58,8 +58,11 @@
 
 (defobject bezier)
 
-(defn new-bezier [p1 p2 p3 p4]
-  (let [ps (map new-point [p1 p2 p3 p4])]
+(defn new-bezier [p1 p2 p3 & p4]
+  (let [p3s (conj p4 p3)
+        p2s (conj p3s p2)
+        pts (conj p2s p1)
+        ps  (map new-point pts)]
     (assoc bezier
       :attrs {:id (gensym "bezier")}
       :content (vec ps))))
@@ -72,3 +75,49 @@
     (assoc group
       :attrs {:id (gensym "group")}
       :content (vec os))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                              ;;
+;;      Put in different file eventually        ;;
+;;                                              ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defn get-attrs [obj attr]
+  (-> obj :attrs attr))
+
+(defn get-content [obj]
+  (vec (:content obj)))
+
+(defn para-line [x1 x2 t]
+  (+ (* (- 1 t) x1) (* t x2)))
+
+(defn line-value [l t]
+  (let [content (get-content l)
+        xs (map #(get-attrs % :x) content)
+        ys (map #(get-attrs % :y) content)
+        p (map #(para-line (first %) (last %) t) [xs ys])]
+    p))
+
+(defn bezier-value [b t]
+  (let [content (get-content b)
+        pxs (map #(get-attrs % :x) content)
+        pys (map #(get-attrs % :y) content)
+        para  (fn [e o tt]
+                (map
+                 #(vector
+                   (para-line (first %1) (last %1) tt)
+                   (para-line (first %2) (last %2) tt)) e o))]
+    (loop [even-xs (partition 2 pxs)
+           odd-xs  (partition 2 (rest pxs))
+           even-ys (partition 2 pys)
+           odd-ys  (partition 2 (rest pys))
+           ts      t]
+      (let [xs (para even-xs odd-xs ts)
+            ys (para even-ys odd-ys ts)]
+        (if (= (count xs) 1)
+          (let [xvals (first xs)
+                yvals (first ys)]
+            (map #(para-line (first %) (last %) t) [xvals yvals]))
+          (recur (partition 2 xs) (partition 2 (rest xs))
+                 (partition 2 ys) (partition 2 (rest ys))
+                 t))))))
