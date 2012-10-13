@@ -98,26 +98,29 @@
         p (map #(para-line (first %) (last %) t) [xs ys])]
     p))
 
+
+(defn two-partition [xs]
+  (loop [ys xs
+         ans []]
+    (if (empty? (rest ys))
+      ans
+      (recur
+       (rest ys)
+       (conj
+        ans [(first ys) (first (rest ys))])))))
+
+
+;;Computes the output values of the parametric bezier curve
 (defn bezier-value [b t]
   (let [content (get-content b)
-        pxs (map #(get-attrs % :x) content)
-        pys (map #(get-attrs % :y) content)
-        para  (fn [e o tt]
-                (map
-                 #(vector
-                   (para-line (first %1) (last %1) tt)
-                   (para-line (first %2) (last %2) tt)) e o))]
-    (loop [even-xs (partition 2 pxs)
-           odd-xs  (partition 2 (rest pxs))
-           even-ys (partition 2 pys)
-           odd-ys  (partition 2 (rest pys))
-           ts      t]
-      (let [xs (para even-xs odd-xs ts)
-            ys (para even-ys odd-ys ts)]
-        (if (= (count xs) 1)
-          (let [xvals (first xs)
-                yvals (first ys)]
-            (map #(para-line (first %) (last %) t) [xvals yvals]))
-          (recur (partition 2 xs) (partition 2 (rest xs))
-                 (partition 2 ys) (partition 2 (rest ys))
-                 t))))))
+        pxs  (map #(get-attrs % :x) content)
+        pys  (map #(get-attrs % :y) content)
+        para (fn [ps]
+               (map
+                #(para-line (first %) (last %) t) (two-partition ps)))]
+    (loop [xs (para pxs)
+           ys (para pys)]
+      (if (= (count xs) 1)
+        (flatten (vector xs ys))
+        (recur (para xs)
+               (para ys))))))
